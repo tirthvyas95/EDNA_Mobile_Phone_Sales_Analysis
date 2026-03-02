@@ -227,4 +227,4 @@ CALCULATE(
 2. Enterprise DNA, Data Analytics Challenges by Enterprise DNA. Retrieved March 2, 2026, from https://enterprisedna.co/challenges
 3. SQLBI, SQLBI's Website, Retrieved March 2, 2026. from https://www.sqlbi.com/
 4. SQLBI, SQLBI's Article on Week Baseed Time Analysis Measures, Retrieved March 2, 2026. from https://www.sqlbi.com/articles/week-based-time-intelligence-in-dax/
-5. DAX Paterns, Article on Week-related Calculations, Retrieved March 2, 2026. from  https://www.daxpatterns.com/week-related-calculations/
+5. DAX Patterns, Article on Week-related Calculations, Retrieved March 2, 2026. from  https://www.daxpatterns.com/week-related-calculations/
