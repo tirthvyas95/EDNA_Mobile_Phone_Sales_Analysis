@@ -49,10 +49,13 @@ This calendar is a custom calendar made using the standard 4-4-5 Calendar that R
 11. G Month Number: Month Number of the year according to the Standard Gregorian Calendar
 12. Fiscal Year: Fiscal Year Number 2024 and 2025
 13. Fiscal Quarter: Fiscal Quarter Name like Q1, Q2, etc
-14. Fiscal Week: Fiscal Week name like FW1, FW2, etc
-15. Fiscal Year Quarter Week: Like 2024 FQ1 FW1, 2024 FQ2 FQ2, etc
+14. Fiscal Year Quarter: 2024 FQ1, 2024 FQ2, ...
+15. Fiscal Week: Fiscal Week name like FW1, FW2, etc
+16. Fiscal Year Quarter Week: Like 2024 FQ1 FW1, 2024 FQ2 FQ2, etc
+17. G Month Name: Name of the month according to the gregorian calendar
+18. Fiscal Year Quarter Week Number: Number concatenated from: Fiscal Year + Quarter Index + Week Index
 
-**Following is the DAX used for making this table**
+**Following is the DAX used for making the core of this table**
 ```
 Date_Dim = 
 VAR cal = CALENDARAUTO()
@@ -75,4 +78,151 @@ ADDCOLUMNS(
     "Day of Week", MOD(DATEDIFF(MINX(cal, [Date]), [Date], DAY), 7) + 1
 )
 ```
-**For rest of the Columns the DAX is following**
+**For rest of the Columns the DAX is following:**
+Column Number 9:
+```
+Day of the Week Name = FORMAT ('Date_Dim'[Date], "dddd")
+```
+Column Number 10:
+```
+G Day Number = DATEDIFF(
+    MINX(Date_Dim, Date_Dim[Date]),
+    Date_Dim[Date],
+    DAY
+) + 1
+```
+Column Number 11:
+```
+G Month Number = MONTH(Date_Dim[Date])
+```
+Column Number 12:
+```
+Fiscal Year = Date_Dim[Year] + 2024 - 1
+```
+Column Number 13:
+```
+Fiscal Quarter = "FQ" & Date_Dim[Quarter]
+```
+Column Number 14:
+```
+Fiscal Year Quarter = Date_Dim[Fiscal Year] & " " & Date_Dim[Fiscal Quarter]
+```
+Column Number 15:
+```
+Fiscal Week = "FW" & Date_Dim[Week]
+```
+Column Number 16:
+```
+Fiscal Year Quarter Week = Date_Dim[Fiscal Year] & " " & Date_Dim[Fiscal Quarter] & " " & Date_Dim[Fiscal Week]
+```
+Column Number 17:
+```
+G Month Name = FORMAT(Date_Dim[Date], "MMMM")
+```
+Column Number 18:
+```
+Fiscal Year Quarter Week Number = Date_Dim[Fiscal Year] & "0" & Date_Dim[Quarter] & Date_Dim[Week]
+```
+NOTE: I am still working on the best template for the Retail Calendar, when I am done, I will post it in another repository. Realistically an organization should have one common date dimention which should be calculated and defined only once which is usually the case for all organizations where the logic is defined on SQL Server or the Database system of the company's choice. That said, we should have something like this handy just in case the requirement arise.
+## Date Model
+For this assignment we only have a couple of tables, so our model is not that complex, voici:
+![Data_Model](https://github.com/tirthvyas95/EDNA_Mobile_Phone_Sales_Analysis/blob/92ab2f5a58beaa0d85ff7945d3959bf935558437/Screenshots/Model_View.png)
+## Measures
+Here are the measures used for this Report:
+### Base Measures
+**Total Revenue**
+```
+Total Revenue = SUM(Mobile_Sales[Total_Revenue])
+```
+**Total Units Sold**
+```
+Total Units Sold = SUM(Mobile_Sales[Units_Sold])
+```
+### Time Intelligence Measure
+Our calendar contains columns both for Retail 4-4-5 Calendar and Gregorian Calendar, and the Time Intelligence page contains Time intelligence based on both of the Calendars. Also we are not going to use the base time intelligence functions like TOTALYTD(), TOTALMTD() and TOTALQTD(). Since, we have a custom calendar we will need to make our custom measures for Time Series Analysis.
+**Gregorian Calendar Month to Date Revenue**
+```
+Revenue G Month to Date = 
+VAR CurrentGDay = MAX(Date_Dim[G Day Number])
+VAR CurrentGMonth = MAX(Date_Dim[G Month Number])
+
+
+RETURN
+CALCULATE(
+    [Total Revenue],
+    FILTER(
+        ALL(Date_Dim),
+        Date_Dim[G Month Number] = CurrentGMonth &&
+        Date_Dim[G Day Number] <= CurrentGDay
+    )
+)
+```
+**Units Sold G Month to Date**
+```
+Units Sold G Month to Date = 
+VAR CurrentGDay = MAX(Date_Dim[G Day Number])
+VAR CurrentGMonth = MAX(Date_Dim[G Month Number])
+
+
+RETURN
+CALCULATE(
+    [Total Units Sold],
+    FILTER(
+        ALL(Date_Dim),
+        Date_Dim[G Month Number] = CurrentGMonth &&
+        Date_Dim[G Day Number] <= CurrentGDay
+    )
+)
+```
+**Revenue Week to Date ISO**
+```
+Revenue Week to Date ISO = 
+VAR CurrentFiscalDay = MAX(Date_Dim[Day of Year])
+VAR CurrentFiscalWeek = MAX(Date_Dim[Week])
+VAR CurrentFiscalYear = MAX(Date_Dim[Year])
+
+RETURN
+CALCULATE(
+    [Total Revenue],
+    FILTER(
+        ALL(Date_Dim),
+        Date_Dim[Week] = CurrentFiscalWeek &&
+        Date_Dim[Year] = CurrentFiscalYear &&
+        Date_Dim[Day of Year] <= CurrentFiscalDay
+    )
+)
+```
+**Units Sold G Month to Date**
+```
+Units Sold G Month to Date = 
+VAR CurrentGDay = MAX(Date_Dim[G Day Number])
+VAR CurrentGMonth = MAX(Date_Dim[G Month Number])
+
+
+RETURN
+CALCULATE(
+    [Total Units Sold],
+    FILTER(
+        ALL(Date_Dim),
+        Date_Dim[G Month Number] = CurrentGMonth &&
+        Date_Dim[G Day Number] <= CurrentGDay
+    )
+)
+```
+## Visualizations and Report
+### Overview Page
+![Overview Page View](https://github.com/tirthvyas95/EDNA_Mobile_Phone_Sales_Analysis/blob/92ab2f5a58beaa0d85ff7945d3959bf935558437/Screenshots/Overview_Page.png)
+### Brands Page
+![Brands Page View](https://github.com/tirthvyas95/EDNA_Mobile_Phone_Sales_Analysis/blob/92ab2f5a58beaa0d85ff7945d3959bf935558437/Screenshots/Brands_Page.png)
+### Mobile Devices Page
+![Mobile Devices Page View](https://github.com/tirthvyas95/EDNA_Mobile_Phone_Sales_Analysis/blob/92ab2f5a58beaa0d85ff7945d3959bf935558437/Screenshots/Mobile_Devices_Page.png)
+### Revenue Page
+![Revenue Page View](https://github.com/tirthvyas95/EDNA_Mobile_Phone_Sales_Analysis/blob/92ab2f5a58beaa0d85ff7945d3959bf935558437/Screenshots/Revenue_Page.png)
+### Time Intelligence Page
+![Time Intelligence Page View](https://github.com/tirthvyas95/EDNA_Mobile_Phone_Sales_Analysis/blob/92ab2f5a58beaa0d85ff7945d3959bf935558437/Screenshots/Time_Intelligence_Page.png)
+## References
+1. Microsoft Learn, Microsoft Learn's Data Analyst Career Path. Retrieved March 2, 2026, from https://learn.microsoft.com/en-us/training/career-paths/data-analyst
+2. Enterprise DNA, Data Analytics Challenges by Enterprise DNA. Retrieved March 2, 2026, from https://enterprisedna.co/challenges
+3. SQLBI, SQLBI's Website, Retrieved March 2, 2026. from https://www.sqlbi.com/
+4. SQLBI, SQLBI's Article on Week Baseed Time Analysis Measures, Retrieved March 2, 2026. from https://www.sqlbi.com/articles/week-based-time-intelligence-in-dax/
+5. DAX Paterns, Article on Week-related Calculations, Retrieved March 2, 2026. from  https://www.daxpatterns.com/week-related-calculations/
